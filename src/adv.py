@@ -1,28 +1,46 @@
 import os
 import time
 from room import Room
-from player import Player
+from player import Player,Warrior
+from item import Item
+
+
+# Declare all the items
+items = {
+            "gold":Item(
+                "gold",
+                "Shiny doubloons used to trade for other items"
+            ),
+            "sword":Item(
+                "sword",
+                "A weapon that is used to destroy your enemies"
+            ),
+            "health_potion":Item(
+                "healing potion",
+                "An elixer to increase one's health points"
+            )
+        }
 
 # Declare all the rooms
 
 room = {
     'outside':  Room("Outside Cave Entrance",
                      "outside",
-                     "North of you, the cave mount beckons"),
+                     "North of you, the cave mount beckons", [items["sword"]] ),
 
     'foyer':    Room("Foyer", "foyer","""Dim light filters in from the south. Dusty
 passages run north and east."""),
 
     'overlook': Room("Grand Overlook", "overlook","""A steep cliff appears before you, falling
 into the darkness. Ahead to the north, a light flickers in
-the distance, but there is no way across the chasm."""),
+the distance, but there is no way across the chasm.""", [items["health_potion"]]),
 
     'narrow':   Room("Narrow Passage", "narrow", """The narrow passage bends here from west
 to north. The smell of gold permeates the air."""),
 
     'treasure': Room("Treasure Chamber","treasure", """You've found the long-lost treasure
 chamber! Sadly, it has already been completely emptied by
-earlier adventurers. The only exit is to the south."""),
+earlier adventurers. The only exit is to the south.""",[items["gold"]]),
 }
 
 
@@ -37,7 +55,44 @@ room['narrow'].w_to = room['foyer']
 room['narrow'].n_to = room['treasure']
 room['treasure'].s_to = room['narrow']
 
-keybindings = {"n":"n_to","s":"s_to","e":"e_to","w":"w_to"}
+keybindings = {
+    "n":{
+        "name":"n_to",
+        "description":"Move North"
+        },
+    "s":{
+        "name":"s_to",
+        "description":"Move South"
+        },
+    "e":{
+        "name":"e_to",
+        "description":"Move East"
+        },
+    "w":{
+        "name":"w_to",
+        "description":"Move West"
+        },
+    "h":{
+        "name":"help",
+        "description":"List availble options"
+        },
+    "v":{
+        "name":"view",
+        "description":"View items in a room"
+        },
+    "p":{
+        "name":"pick",
+        "description":"Pick up and item in a room"
+        },
+    "i":{
+        "name":"inventory",
+        "description":"View inventory"
+        },
+    "d":{
+        "name":"drop",
+        "description":"Drop item from inventory"
+        }
+}
 
 def draw(position):
     treasure = "*" if position=="treasure"  else " "
@@ -71,6 +126,19 @@ def welcome():
     |_____| |     \  \  /  |______ | \  |    |    |     | |_____/ |______
     |     | |_____/   \/   |______ |  \_|    |    |_____| |    \_ |______\n\n\n""")
 
+
+def view_items(items):
+    if(len(items) == 0):
+        print("\nThis room doesn't have any items\n")
+    else:
+        [print(f"\n\n\tname: {i.name}\n\tdescription: {i.description}\n\n") for i in items]
+    input("Hit Return/Enter to continue the game\n\n")
+
+def print_help():
+    print("Available options are:")
+    for binding,value in keybindings.items():
+        desc = value["description"]
+        print(f"\t{binding} = {desc}")
 #
 # Main
 #
@@ -94,13 +162,18 @@ def main():
     welcome()
     while True:
         draw(player1.current_room)
-        user_input = input("\n\nWhich direction would you like to move?\t")
+        user_input = input("\n\nWhat action would you like to do?\t")
         user_input = user_input.strip().lower()
         
         if(user_input=="n" or user_input=="s" or user_input=="e" or user_input=="w"):
-            direction = keybindings[user_input]
+            direction = keybindings[user_input]["name"]
             next_room = room[player1.current_room].neighbor(direction)
             if(next_room):
+                if(next_room == "overlook" ):
+                    player1 = Warrior.from_human(player1)
+                    print(player1.type)
+                    print("Congrats, your're a Warrior")
+                    input("Hit Return/Enter to continue the game\n\n")
                 player1.current_room = next_room
                 os.system('clear')
                 continue
@@ -110,19 +183,35 @@ def main():
                 os.system("clear")
                 continue
         elif(user_input=="q"):
-            print("Thank You for playing Lamba Adventure")
+            print("\n\nThank You for playing Lamba Adventure\n\n")
             time.sleep(.7)
             os.system('clear')
             break
-        elif(user_input=="h"):
-            print("Available options are:\n\th = List available options\n\tn = move North\n\ts = move South\n\te = move Eest\n\tw = move West")
-            input("Hit Return/Enter to continue the game")
+        elif(user_input == "v"):
+            view_items(room[player1.current_room].list_items())
+            os.system('clear')
+        elif(user_input == "p"):
+            player1.get_item(room[player1.current_room])
+            input("\nHit Return/Enter to continue the game")
+            os.system('clear')
+        elif(user_input == "d"):
+            player1.drop_item(room[player1.current_room])
+            input("\nHit Return/Enter to continue the game")
+            os.system('clear')
+        elif(user_input=="h" or user_input=="help"):
+            print_help()
+            input("\nHit Return/Enter to continue the game")
+            os.system("clear")
+            continue
+        elif(user_input=="i"):
+            player1.view_items()
+            input("\nHit Return/Enter to continue the game")
             os.system("clear")
             continue
         else:
             print("Input was not recognized")
-            print("Available options are:\n\th = List available options\n\tn = move North\n\ts = move South\n\te = move Eest\n\tw = move West")
-            input("Hit Return/Enter to continue the game")
+            print_help()
+            input("\nHit Return/Enter to continue the game")
             os.system("clear")
             continue
 
